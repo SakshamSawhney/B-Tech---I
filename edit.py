@@ -33,8 +33,25 @@ total_rows = len(df)
 st.title("📝 Gold Standard Summary Annotator")
 
 # --- 2. Progress Bar & Layout ---
-st.write(f"**Row:** {st.session_state.current_index + 1} of {total_rows}")
-st.progress(st.session_state.current_index / total_rows if total_rows > 0 else 0)
+col_info, col_jump = st.columns([2, 1])
+
+with col_info:
+    st.write(f"**Row:** {st.session_state.current_index + 1} of {total_rows}")
+    st.progress(st.session_state.current_index / total_rows if total_rows > 0 else 0)
+
+with col_jump:
+    st.write("**Jump to Row:**")
+    jump_row = st.number_input(
+        "Enter row number",
+        min_value=1,
+        max_value=total_rows,
+        value=st.session_state.current_index + 1,
+        step=1,
+        label_visibility="collapsed"
+    )
+    if jump_row != st.session_state.current_index + 1:
+        st.session_state.current_index = jump_row - 1
+        st.rerun()
 
 if st.session_state.current_index < total_rows:
     current_row = df.iloc[st.session_state.current_index]
@@ -74,7 +91,7 @@ if st.session_state.current_index < total_rows:
     )
 
     # --- 6. Navigation & Saving ---
-    col1, col2, col3 = st.columns([1, 1, 4])
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
     
     with col1:
         # Previous Button
@@ -98,6 +115,23 @@ if st.session_state.current_index < total_rows:
             # 4. Move to next row
             if st.session_state.current_index < total_rows - 1:
                 st.session_state.current_index += 1
+            st.rerun()
+    
+    with col3:
+        # Delete Row Button
+        if st.button("🗑️ Delete Row", use_container_width=True):
+            # 1. Remove the row from dataframe
+            st.session_state.df = df.drop(st.session_state.current_index).reset_index(drop=True)
+            df = st.session_state.df
+            
+            # 2. Save updated dataframe back to CSV
+            df.to_csv(FILE_PATH, index=False)
+            
+            # 3. Adjust current index if needed
+            if st.session_state.current_index >= len(df) and st.session_state.current_index > 0:
+                st.session_state.current_index -= 1
+            
+            st.success("✅ Row deleted successfully!")
             st.rerun()
 
 else:
